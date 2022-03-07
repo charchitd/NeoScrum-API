@@ -233,8 +233,8 @@ app.get('/dashboard', async (req, res) => {
             }
             else{
                 console.log(authdata);
-                // cookie = authdata;
-                ver = authdata;
+                cookie = authdata;
+                // ver = authdata;
                 // res.json({
                 //     msg: 'Valid Token: Success',
                 //     authdata
@@ -284,7 +284,7 @@ app.get('/dashboard', async (req, res) => {
 app.get('/feedback', async (req, res) => {
     
     
-    if(ver == undefined)
+    if(cookie == undefined)
     {
         res.json({
             
@@ -297,7 +297,7 @@ app.get('/feedback', async (req, res) => {
 
     AllData.forEach((user) => {
           
-        if(ver.email != user.email && user.adminemail != "admin@gmail.com" && user.feedback.length == 0)
+        if(cookie.email != user.email && user.adminemail != "admin@gmail.com" && user.feedback.length == 0)
         {
 
             var toFeeds = {
@@ -348,7 +348,7 @@ app.post('/addfeedback', async (req, res) => {
         for (let obj in currfb.feedbackGivenBy)
         {
             // console.log("obj is " , currfb.feedbackGivenBy[obj])
-            if (ver.email == currfb.feedbackGivenBy[obj])
+            if (cookie.email == currfb.feedbackGivenBy[obj])
             {
                 console.log('feedback already given');
                 res.json({
