@@ -128,7 +128,11 @@ app.post('/register', upload.single('image'), async (req, res, next) => {
             {
             //    throw createError.Conflict(`${email} is already exist...`);
                console.log('ths email already exist');
-               res.json(`the email ${email} is already exist....`);
+               res.json({
+                   msg: `the email ${email} is already exist....`,
+                   status: 403,
+                
+                }).status(400);
                return;
             }
 
@@ -246,8 +250,9 @@ app.get('/dashboard', async (req, res) => {
         const displayfeeds = []
         
         AllData.forEach((user) => {
-              
-            if(user.feedback != null && user.feedback.length > 0 && user.userName != "Admin")
+            
+
+            if(ver.email == user.email && user.feedback != null && user.feedback.length > 0 && user.userName != "Admin")
             {
 
                var display = {
@@ -272,7 +277,7 @@ app.get('/dashboard', async (req, res) => {
 
         res.json({
             msg: "Valid Token: Success",
-            status:200,
+            status:'Success',
             displayfeeds
             
         })
@@ -296,23 +301,33 @@ app.get('/feedback', async (req, res) => {
     const displaydata = []
 
     AllData.forEach((user) => {
-          
-        if(ver.email != user.email && user.adminemail != "admin@gmail.com" && user.feedback.length == 0)
+        var adduser = true;
+
+        if(ver.email != user.email && user.adminemail != "admin@gmail.com")
         {
-
-            var toFeeds = {
-
-                name: user.userName,
-                image: user.imgPath
-            }
-            displaydata.push(toFeeds)
-            // displaydata.push(JSON.stringify(user.imgPath))
-            console.log(toFeeds);
-            // console.log(user.imgPath);
+            for(const x in user.feedbackGivenBy)
+            {
             
-            // console.log(user.email);, fromIndex
+                if(ver.email == user.feedbackGivenBy[x])
+                {
+
+                    adduser = false
+                    // displaydata.push(JSON.stringify(user.imgPath))
+                    //console.log(toFeeds);
+                    // console.log(user.imgPath);
+                    
+                    // console.log(user.email);, fromIndex
+                }
+            }
+            if(adduser == true){
+                var toFeeds = {
+
+                    name: user.userName,
+                    image: user.imgPath,
+                }
+                displaydata.push(toFeeds)
+            }
         }
-        
     })
     
     res.json({
@@ -340,7 +355,7 @@ app.post('/addfeedback', async (req, res) => {
     // const savedUser = await user.save();
     console.log(feedback);
     console.log("currfb is: ", currfb);
-    // console.log("useremail : ", ver.email);
+    console.log("useremail : ", ver.email);
 
     console.log(currfb);
     if (currfb)
@@ -360,7 +375,7 @@ app.post('/addfeedback', async (req, res) => {
         }
 
         currfb.feedback.push(feedback)
-        currfb.feedbackGivenBy.push(useremail)
+        currfb.feedbackGivenBy.push(ver.email)
         console.log('feedback added')
 
         const updatefeed = await userModel.updateOne({email:email}, {$set:{feedbackGivenBy:currfb.feedbackGivenBy, feedback:currfb.feedback}});
