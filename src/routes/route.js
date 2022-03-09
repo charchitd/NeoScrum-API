@@ -1,10 +1,10 @@
 // api routes
 
 const express = require('express');
-const userModel = require("./models/model.js");
+const userModel = require("../models/model.js");
 // const {authSchema} = require('./authSchema')
 const cookiesParser = require('cookie-parser');
-const passcall = require('./Helpers/functions.js')
+const passcall = require('../Helpers/functions.js')
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const app = express();
@@ -233,7 +233,7 @@ app.get('/dashboard', async (req, res) => {
             }
             else{
                 console.log(authdata);
-                cookie = authdata;
+                ver = authdata;
                 // ver = authdata;
                 // res.json({
                 //     msg: 'Valid Token: Success',
@@ -284,7 +284,7 @@ app.get('/dashboard', async (req, res) => {
 app.get('/feedback', async (req, res) => {
     
     
-    if(cookie == undefined)
+    if(ver == undefined)
     {
         res.json({
             
@@ -297,7 +297,7 @@ app.get('/feedback', async (req, res) => {
 
     AllData.forEach((user) => {
           
-        if(cookie.email != user.email && user.adminemail != "admin@gmail.com" && user.feedback.length == 0)
+        if(ver.email != user.email && user.adminemail != "admin@gmail.com" && user.feedback.length == 0)
         {
 
             var toFeeds = {
@@ -348,11 +348,12 @@ app.post('/addfeedback', async (req, res) => {
         for (let obj in currfb.feedbackGivenBy)
         {
             // console.log("obj is " , currfb.feedbackGivenBy[obj])
-            if (cookie.email == currfb.feedbackGivenBy[obj])
+            if (ver.email == currfb.feedbackGivenBy[obj])
             {
                 console.log('feedback already given');
                 res.json({
                     msg: "feedback is already given...",
+                    status: 403,
                     })
                 return 
             }

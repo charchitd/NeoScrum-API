@@ -6,7 +6,7 @@ const cookiesParser = require('cookies-parser');
 
 const mongo = require('mongoose');
 const bodyParser = require('body-parser');
-const router = require('./route');
+const router = require('./routes/route.js');
 const port = 2100;
 
 app.use(express.json());
