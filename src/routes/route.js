@@ -117,7 +117,7 @@ app.post('/register', upload.single('image'), async (req, res, next) => {
             if(adminemail != "admin@gmail.com" || password != "admin123")
             {    
                 console.log('not admin')
-                res.send("Only admin can create user")
+                res.status(403).json({ msg: "Only admin can create user"})
                 return 
             }
 
@@ -128,11 +128,11 @@ app.post('/register', upload.single('image'), async (req, res, next) => {
             {
             //    throw createError.Conflict(`${email} is already exist...`);
                console.log('ths email already exist');
-               res.json({
+               res.status(403).json({
                    msg: `the email ${email} is already exist....`,
-                   status: 403,
                 
-                }).status(400);
+                
+                });
                return;
             }
 
@@ -151,7 +151,10 @@ app.post('/register', upload.single('image'), async (req, res, next) => {
 
         
         console.log('success validation')
-        res.json("Validation success record saved ");
+        res.status(200).json({
+            
+            msg: "Validation success record saved "
+        });
     
 
   
@@ -163,7 +166,10 @@ app.post('/register', upload.single('image'), async (req, res, next) => {
         console.error(err);
         next("Error", err);
 
-        res.json("error in authenticating") 
+        res.status(401).json({  // unauthorized
+            
+            msg: "error in authenticating"
+        }) 
     }
 
 
@@ -201,7 +207,7 @@ app.post('/login', async (req, res) => {
 
             useremail = email
             console.log('login success');
-            res.send({
+            res.status(201).send({
                 msg: "Successfully Loggedin",
                 token:token
             });
@@ -209,12 +215,12 @@ app.post('/login', async (req, res) => {
         else{
 
             console.log('Wrong Password');
-            res.json('Wrong Password');
+            res.status(404).json('Wrong Password');
         }
   }
   else{
     console.log(`email ${email} not found`);
-    res.json(`email ${email} not found`);
+    res.status(401).json(`email ${email} not found`);
 
   }
 
@@ -233,7 +239,7 @@ app.get('/dashboard', async (req, res) => {
 
             if(er)
             {
-                res.sendStatus(403).json('Error: Not a Valid Token');
+                res.status(400).json({ msg: 'Error: Not a Valid Token'});
             }
             else{
                 console.log(authdata);
@@ -275,9 +281,8 @@ app.get('/dashboard', async (req, res) => {
             
         })
 
-        res.json({
+        res.status(201).json({
             msg: "Valid Token: Success",
-            status:'Success',
             displayfeeds
             
         })
@@ -291,7 +296,7 @@ app.get('/feedback', async (req, res) => {
     
     if(ver == undefined)
     {
-        res.json({
+        res.status(401).json({
             
             msg: "Unauthorized user"
         })
@@ -366,9 +371,9 @@ app.post('/addfeedback', async (req, res) => {
             if (ver.email == currfb.feedbackGivenBy[obj])
             {
                 console.log('feedback already given');
-                res.json({
+                res.status(403).json({
                     msg: "feedback is already given...",
-                    status: 403,
+                    
                     })
                 return 
             }
@@ -382,7 +387,7 @@ app.post('/addfeedback', async (req, res) => {
         console.log(updatefeed);
         //userModel.save();
         //console.log(currfb);
-        res.json({
+        res.status(201).json({
             msg: "feedback added",
 
         })
