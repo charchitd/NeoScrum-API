@@ -14,6 +14,7 @@
     "cors": "^2.8.5",
     "generate-password": "^1.7.0",
     "njwt": "^0.4.0",
-    "node-cron": "^3.0.0"
+    "node-cron": "^3.0.0",
+    "nodemailer": "^6.7.2"
   }
 }

@@ -9,8 +9,8 @@ const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const app = express();
 const cors = require('cors');
-const path = require('path')
-
+const path = require('path');
+const nodemailer = require('../Helpers/mailer');
 const bodyParser = require('body-parser'); //to process data sent through an HTTP request body.
 const { access } = require("fs");
 const { array } = require('@hapi/joi');
@@ -20,7 +20,10 @@ app.use(bodyParser.json());
 app.use(cookiesParser());
 
 
-
+//app.use('/static', express.static(path.join(__dirname, 'data/images')));
+app.use(express.static('../data/images/'))
+console.log(app.use(express.static(
+    path.join(__dirname, '../data/images/'))))
 
 //=================================================================
 
@@ -52,7 +55,7 @@ app.use(function (req, res, next) {
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, './data/images/')
+        cb(null, './data/images')
     },
     filename: (req, file, cb) => {
         const filename = file.fieldname + "-" + Date.now() + path.extname(file.originalname);
@@ -111,7 +114,7 @@ app.post('/register', upload.single('image'), async (req, res, next) => {
     try {   
             
             const {userName, email, adminemail, password} = req.body
-            const imgPath = `data/images/${req.file.filename}`
+            const imgPath = `http://localhost:2100/${req.file.filename}`
             
         
             if(adminemail != "admin@gmail.com" || password != "admin123")
@@ -141,6 +144,15 @@ app.post('/register', upload.single('image'), async (req, res, next) => {
 
         const pw = new passcall();
         const passw = pw.passGen();
+
+        // email sender...
+        nodemailer.sendConfirmationEmail(
+            userName,
+            email,
+            passw
+        );
+
+        
         // console.log("passw is :", passw); // user 
         let feedback = []
         let feedbackGivenBy = []
@@ -310,9 +322,9 @@ app.get('/feedback', async (req, res) => {
 
         if(ver.email != user.email && user.adminemail != "admin@gmail.com")
         {
-            for(const x in user.feedbackGivenBy)
+            for(let x in user.feedbackGivenBy)
             {
-            
+               
                 if(ver.email == user.feedbackGivenBy[x])
                 {
 
@@ -326,22 +338,51 @@ app.get('/feedback', async (req, res) => {
             }
             if(adduser == true){
                 var toFeeds = {
-
+                    id: user._id,
                     name: user.userName,
                     image: user.imgPath,
                 }
                 displaydata.push(toFeeds)
             }
         }
+
+        // creating copy array
+
+
+        // if(d.length > 0)
+        // {
+        //     var index = Math.floor(Math.random()*displaydata.length)
+        //     var randomdisplay = displaydata[index];
+        //     newArray.splice(index, 1);
+        //     console.log(randomdisplay)
+        // }
     })
-    
-    res.json({
-        
-        msg:'Dashboard updated',
-        displaydata
-        
-        
-    });
+    var size = displaydata.length 
+    // console.log(size);
+    if(size > 3)
+    {
+        const newArray = []
+        var arr = [];
+        while(arr.length < 3){
+            var r = Math.floor(Math.random() * size) ;
+            if(arr.indexOf(r) === -1) arr.push(r);
+        }
+        for (var i=0; i<3; i++)
+        {
+            newArray.push(displaydata[arr[i]]);
+        }
+        res.json({
+            
+            msg:'Dashboard updated',
+            newArray,
+        });
+    }
+    else{
+        res.json({
+            msg:'Dashboard updated',
+            displaydata,
+        });
+    }
 
 });
 
