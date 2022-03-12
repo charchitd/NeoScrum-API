@@ -2,11 +2,14 @@
 
 const express = require('express');
 const userModel = require("../models/model.js");
+const valid = require('../Helpers/validation.js');
 // const {authSchema} = require('./authSchema')
 const cookiesParser = require('cookie-parser');
 const passcall = require('../Helpers/functions.js')
 const multer = require('multer');
-const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt');
+
 const app = express();
 const cors = require('cors');
 const path = require('path');
@@ -22,35 +25,9 @@ app.use(cookiesParser());
 
 //app.use('/static', express.static(path.join(__dirname, 'data/images')));
 app.use(express.static('../data/images/'))
-console.log(app.use(express.static(
-    path.join(__dirname, '../data/images/'))))
+
 
 //=================================================================
-
-let ver;
-let useremail;
-
-
-// creating cookies
-
-app.use(function (req, res, next) {
-  // check if client sent cookie
-  var cookie = req.cookies.ver;
-  if (cookie === undefined) {
-    // no: set a new cookie
-    var randomNumber=Math.random().toString();
-    randomNumber=randomNumber.substring(2,randomNumber.length);
-    res.cookie('cookieName',randomNumber, { maxAge: 900000, httpOnly: true });
-    console.log('cookie created successfully');
-  } else {
-    // yes, cookie was already present 
-    console.log('cookie exists', cookie);
-  } 
-  next(); 
-});
-
-
-
 
 
 const storage = multer.diskStorage({
@@ -63,7 +40,7 @@ const storage = multer.diskStorage({
     }
 });
 
-var upload = multer({
+const upload = multer({
     storage: storage,
     fileFilter: (req, file, cb) => {
         if (file.mimetype == "image/png" || file.mimetype == "image/jpg" || file.mimetype == "image/jpeg") {
@@ -74,31 +51,6 @@ var upload = multer({
         }
     }
 });
-
-
-// function verifyToken(req, res,next) {  
-//     //Get Auth header value  
-//     const bearerHearder = req.headers['authorization'];  
-//     //check if bearer is undefined  
-//     if(typeof bearerHearder != 'undefined'){  
-//         //split at the space  
-//         const bearer = bearerHearder.split(' ');  
-//         //Get the token from array  
-//         const bearerToken = bearer[1];  
-//         // set the token  
-//         req.token = bearerToken;  
-//         //Next middleware  
-        
-//         next();  
-  
-//     }else{  
-//         //Forbidden  
-//         res.sendStatus(403);  
-//     }  
-
-
-// } 
-
 
 
 
@@ -142,8 +94,8 @@ app.post('/register', upload.single('image'), async (req, res, next) => {
        
         // Calling password Generating.. 
 
-        const pw = new passcall();
-        const passw = pw.passGen();
+        // const pw = new passcall();
+        const passw = passcall.passGen();
 
         // email sender...
         nodemailer.sendConfirmationEmail(
@@ -151,12 +103,13 @@ app.post('/register', upload.single('image'), async (req, res, next) => {
             email,
             passw
         );
-
-        
+        const hashpsw = bcrypt.hashSync(passw, 10);
+        console.log('hashw is ', hashpsw)
         // console.log("passw is :", passw); // user 
+        let feed = {}
         let feedback = []
-        let feedbackGivenBy = []
-        const user = new userModel({userName, email, imgPath, passw, feedbackGivenBy, feedback});
+        //let feedbackGivenBy = []
+        const user = new userModel({userName, email, imgPath, hashpsw,feedback});
         const savedUser = await user.save();
         console.log(savedUser);
         
@@ -193,18 +146,23 @@ app.post('/register', upload.single('image'), async (req, res, next) => {
 
 app.post('/login', async (req, res) => {
 
+    try{
 
   const {email, passw} = req.body;
   
    const doesExist = await userModel.findOne({email:email})
   console.log("email is:",email)
-//   console.log("Doesexist is: ",doesExist);
+  console.log("Doesexist is: ",doesExist.hashpsw);
   if(doesExist)
   {
 
     // res.send(' Email is found');
     //const doespassExist = await userModel.findOne({passw:passw});
-       if(doesExist.passw == passw)
+    //    if(doesExist.passw == passw)
+    const verified = bcrypt.compareSync(passw, doesExist.hashpsw);
+        // if res == true, password matched
+        // else wrong password
+      if(verified == true)
         {
             
             const token = jwt.sign({
@@ -214,7 +172,7 @@ app.post('/login', async (req, res) => {
                 email:email,
                 passw:passw,
 
-            }, "SecretKey", {expiresIn: "30h"});
+            }, "SecretKey", {expiresIn: "16h"});
 
 
             useremail = email
@@ -224,6 +182,8 @@ app.post('/login', async (req, res) => {
                 token:token
             });
         }
+    
+
         else{
 
             console.log('Wrong Password');
@@ -235,97 +195,104 @@ app.post('/login', async (req, res) => {
     res.status(401).json(`email ${email} not found`);
 
   }
+    } catch(er){
 
+        console.error(er);
+        res.status(400).json({
+            msg: "ERROR"
+        })
+    }
 });
 
 // dashboard display for loggedin user --------------------------------------------------------------
 
 app.get('/dashboard', async (req, res) => {
 
+    try{
     console.log('====== Dashboard =======');
     
-        const token = req.body.token;
-  
-    //       console.log(jwt.verify(token, "SecretKey"));
-          jwt.verify(token, "SecretKey", (er, authdata) => {
-
-            if(er)
-            {
-                res.status(400).json({ msg: 'Error: Not a Valid Token'});
-            }
-            else{
-                console.log(authdata);
-                ver = authdata;
-                // ver = authdata;
-                // res.json({
-                //     msg: 'Valid Token: Success',
-                //     authdata
-                // })
-            }
-        })
-
-        const AllData = await userModel.find({});
-        const displayfeeds = []
+        const token = req.headers.token;
         
-        AllData.forEach((user) => {
-            
+        // const veri = new valid();
+        var vemail = valid.verifyToken(token);
+        console.log(vemail)
+        if (vemail != null){
+           //---ver.email-----      
+            console.log('Valid token input');
+            const AllData = await userModel.find({});
+            const displayfeeds = []
+           
+            AllData.forEach((user) => {
+                
+                // ver.email
+                if(vemail == user.email && user.feedback != null && user.feedback.length > 0 && user.userName != "Admin")
+                {
+    
+                   var display = {
+                        id: user._id,
+                        name: user.userName,
+                        image: user.imgPath,
+                        feedback: user.feedback,
+                        postBy: user.feedbackGivenBy
+                    }
+                    displayfeeds.push(display)
+                    // displaydata.push(JSON.stringify(display))
+                    // displaydata.push(user.feedback)
+                    // displaydata.push(user.feedbackGivenBy)
+                    console.log(display)
+                    // console.log(user.userName);
+                    // console.log(user.imgPath);
+                    // console.log("Feedback:",user.feedback)
+                    // console.log("posted by:",user.feedbackGivenBy)
+               }
+                
+            })
+    
+            res.status(201).json({
+                msg: "Valid Token: Success",
+                displayfeeds
+                
+            })
+        //------
+        }else{
+            res.status(400).json({ msg: 'Error: Not a Valid Token'});
+            return
+        }
+    
+    }catch(er){
 
-            if(ver.email == user.email && user.feedback != null && user.feedback.length > 0 && user.userName != "Admin")
-            {
-
-               var display = {
-                    id: user._id,
-                    name: user.userName,
-                    image: user.imgPath,
-                    feedback: user.feedback,
-                    postBy: user.feedbackGivenBy
-                }
-                displayfeeds.push(display)
-                // displaydata.push(JSON.stringify(display))
-                // displaydata.push(user.feedback)
-                // displaydata.push(user.feedbackGivenBy)
-                console.log(display)
-                // console.log(user.userName);
-                // console.log(user.imgPath);
-                // console.log("Feedback:",user.feedback)
-                // console.log("posted by:",user.feedbackGivenBy)
-           }
-            
+        console.error(er);
+        res.status(400).json({
+            msg: "ERROR"
         })
-
-        res.status(201).json({
-            msg: "Valid Token: Success",
-            displayfeeds
-            
-        })
-
+    }
 });
 
 // dashboard feedback ---------------------------------------------------------------------------------------
 
 app.get('/feedback', async (req, res) => {
-    
-    
-    if(ver == undefined)
-    {
-        res.status(401).json({
+   
+    try{
+        const token = req.headers.token
+        // const veri = new valid();
+        var vemail = valid.verifyToken(token);
+        console.log("email is :", vemail)
+        if (vemail != null){
+           //--------      
+            console.log('Valid token input');
             
-            msg: "Unauthorized user"
-        })
-        return 
-    }
-    const AllData = await userModel.find({});
+            const AllData = await userModel.find({});
     const displaydata = []
 
     AllData.forEach((user) => {
         var adduser = true;
-
-        if(ver.email != user.email && user.adminemail != "admin@gmail.com")
+        // ver.email
+        if(vemail != user.email && user.adminemail != "admin@gmail.com")
         {
             for(let x in user.feedbackGivenBy)
             {
                
-                if(ver.email == user.feedbackGivenBy[x])
+                if(vemail == user.feedbackGivenBy[x])
                 {
 
                     adduser = false
@@ -337,8 +304,8 @@ app.get('/feedback', async (req, res) => {
                 }
             }
             if(adduser == true){
-                var toFeeds = {
-                    id: user._id,
+                let toFeeds = {
+                    email: user.email,
                     name: user.userName,
                     image: user.imgPath,
                 }
@@ -357,14 +324,14 @@ app.get('/feedback', async (req, res) => {
         //     console.log(randomdisplay)
         // }
     })
-    var size = displaydata.length 
+    let size = displaydata.length 
     // console.log(size);
     if(size > 3)
     {
         const newArray = []
-        var arr = [];
+        let arr = [];
         while(arr.length < 3){
-            var r = Math.floor(Math.random() * size) ;
+            let r = Math.floor(Math.random() * size) ;
             if(arr.indexOf(r) === -1) arr.push(r);
         }
         for (var i=0; i<3; i++)
@@ -383,7 +350,22 @@ app.get('/feedback', async (req, res) => {
             displaydata,
         });
     }
+        //------
+        }else{
+            res.status(400).json({ msg: 'Error: Not a Valid Token and Unauthorized user'});
+            return
+        }
+        // ----------
+    
+    
+    
+    } catch(er){
 
+        console.error(er);
+        res.status(400).json({
+            msg: "ERROR"
+        })
+    }
 });
 
 
@@ -391,56 +373,83 @@ app.get('/feedback', async (req, res) => {
 
 app.post('/addfeedback', async (req, res) => {
 
-
-    const feedback = req.body.feedback;
-    const email = req.body.email;
-
-    const currfb = await userModel.findOne({email});
-
-    // const user = new userModel({userName, email, imgPath, passw,feedback});
-    // const savedUser = await user.save();
-    console.log(feedback);
-    console.log("currfb is: ", currfb);
-    console.log("useremail : ", ver.email);
-
-    console.log(currfb);
-    if (currfb)
+    try
     {
-        for (let obj in currfb.feedbackGivenBy)
-        {
-            // console.log("obj is " , currfb.feedbackGivenBy[obj])
-            if (ver.email == currfb.feedbackGivenBy[obj])
+    const token = req.headers.token;
+    
+    // const veri = new valid();
+        let vemail = valid.verifyToken(token);
+        console.log(vemail)
+        if (vemail != null){
+           //--------      
+            console.log('Valid token input');
+            
+            const feedback = req.body.feedback;
+            const email = req.body.email;
+        
+            const currfb = await userModel.findOne({email});
+        
+            // const user = new userModel({userName, email, imgPath, passw,feedback});
+            // const savedUser = await user.save();
+            console.log(feedback);
+            console.log("currfb is: ", currfb);
+            console.log("useremail : ", vemail); //ver.email
+        
+            console.log(currfb);
+            if (currfb)
             {
-                console.log('feedback already given');
-                res.status(403).json({
-                    msg: "feedback is already given...",
-                    
-                    })
-                return 
+                for (let obj in currfb.feedback.feedbackGivenBy)
+                {
+                    // console.log("obj is " , currfb.feedbackGivenBy[obj])
+                    let feedbackGivenById = currfb.feedback.id[obj]
+                    let feedbackGivenByEmail  = await userModel.findOne({feedbackGivenById});
+                    if (vemail == feedbackGivenByEmail.email) // ver.email
+                    {
+                        console.log('feedback already given');
+                        res.status(403).json({
+                            msg: "feedback is already given...",
+                            
+                            })
+                        return 
+                    }
+                }
+        
+                
+                //currfb.feedbackGivenBy.push(vemail) // ver.email
+                console.log('feedback added')
+                var nowDate = new Date(); 
+                var date = nowDate.getFullYear()+'-'+(nowDate.getMonth()+1)+'-'+nowDate.getDate(); 
+                const data = {feedback:feedback, id:currfb._id, PostedOn: date}
+                currfb.feedback.push(data)
+                const updatefeed = await userModel.updateOne({email:email}, {$set:{feedback:currfb.feedback}});
+                console.log(updatefeed);
+                let store = currfb.feedback;
+                console.log('store: ', store)
+                res.status(201).json({
+                    msg: "feedback added",
+                    store               })
             }
+            else{
+                console.log('user not found')
+                res.json({
+                    msg:'user not found',
+                status: false
+            })
+            }
+        //------
+        }else{
+            res.status(400).json({ msg: 'Error: Not a Valid Token'});
+            return
         }
+  
+    } catch(er){
 
-        currfb.feedback.push(feedback)
-        currfb.feedbackGivenBy.push(ver.email)
-        console.log('feedback added')
-
-        const updatefeed = await userModel.updateOne({email:email}, {$set:{feedbackGivenBy:currfb.feedbackGivenBy, feedback:currfb.feedback}});
-        console.log(updatefeed);
-        //userModel.save();
-        //console.log(currfb);
-        res.status(201).json({
-            msg: "feedback added",
-
+        console.error(er);
+        res.status(400).json({
+            msg: "ERROR"
         })
+    
     }
-    else{
-        console.log('user not found')
-        res.json({
-            msg:'user not found',
-        status: false
-    })
-    }
-
 });
 // ==========================================================================
 

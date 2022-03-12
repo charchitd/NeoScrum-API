@@ -23,12 +23,9 @@ const NeoSchema = new mongo.Schema({
     email: joi.string().trim().lowercase().required(),
     imgPath: joi.string().required().trim(),
     adminemail: joi.string().required().lowercase().trim(),
-    passw: joi.string().required(),
-    feedbackGivenBy: joi.array().items(joi.string().max(100)),
-    feedback: joi.array().items(joi.string().max(100)),
+    hashpsw: joi.string().required(),
+    feedback: joi.array().items(joi.array()),
         
-    
-
 }, {versionKey: false});
 
 const userauth = mongo.model('userauth', NeoSchema);
