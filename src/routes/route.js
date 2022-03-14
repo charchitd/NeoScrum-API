@@ -3,9 +3,10 @@
 const express = require('express');
 const userModel = require("../models/model.js");
 const valid = require('../Helpers/validation.js');
+
 // const {authSchema} = require('./authSchema')
 const cookiesParser = require('cookie-parser');
-const passcall = require('../Helpers/functions.js')
+const passcall = require('../Helpers/passfunc.js')
 const multer = require('multer');
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt');
@@ -27,7 +28,7 @@ app.use(cookiesParser());
 app.use(express.static('../data/images/'))
 
 
-//=================================================================
+//====================== multer operation ===========================================
 
 
 const storage = multer.diskStorage({
@@ -78,10 +79,10 @@ app.get('/feedback', controller.feedback)
 // adding feedback -------------------------------------------------
 
 app.post('/addfeedback', controller.addfeedback)
-// ==========================================================================
+
 
 module.exports = app;
 
 // kill port
-// lsof -i :3070
+// lsof -i :2100
 // kill -9 <PID>

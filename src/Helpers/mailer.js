@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const config = require('./auth.config');
+const config = require('../config/auth.config');
 
 const userid = config.userid;
 const pass = config.pass;

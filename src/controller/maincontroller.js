@@ -3,7 +3,7 @@ const userModel = require("../models/model.js");
 const valid = require('../Helpers/validation.js');
 // const {authSchema} = require('./authSchema')
 const cookiesParser = require('cookie-parser');
-const passcall = require('../Helpers/functions.js')
+const passcall = require('../Helpers/passfunc.js')
 const multer = require('multer');
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt');
@@ -13,8 +13,8 @@ const cors = require('cors');
 const path = require('path');
 const nodemailer = require('../Helpers/mailer');
 const bodyParser = require('body-parser'); //to process data sent through an HTTP request body.
-const { access } = require("fs");
-const { array } = require('@hapi/joi');
+
+require('dotenv').config();
 app.use(bodyParser.json());
 
 app.use(cookiesParser());
@@ -24,7 +24,7 @@ exports.register = async (req, res, next) => {
     console.log(req.body);
    
    try {   
-           
+           const resp = [{}]
            const {userName, email} = req.body
            const token = req.headers.token
            const imgPath = `http://localhost:2100/${req.file.filename}`
@@ -46,6 +46,7 @@ exports.register = async (req, res, next) => {
               console.log('ths email already exist');
               res.status(403).json({
                   msg: `the email ${email} is already exist....`,
+                  resp
                });
               return;
            }
@@ -53,7 +54,6 @@ exports.register = async (req, res, next) => {
       
        // Calling password Generating.. 
 
-       // const pw = new passcall();
        //admin pass : NgMRIvkeGG
        const passw = passcall.passGen();
        // email sender...
@@ -77,7 +77,8 @@ exports.register = async (req, res, next) => {
        console.log('success validation')
        res.status(200).json({
            
-           msg: "Validation success record saved "
+           msg: "Validation success record saved ",
+           resp
        });
    
 
@@ -92,7 +93,8 @@ exports.register = async (req, res, next) => {
 
        res.status(401).json({  // unauthorized
            
-           msg: "error in authenticating"
+           msg: "error in authenticating",
+           resp
        }) 
    }
 
@@ -106,8 +108,8 @@ exports.login = async (req, res) => {
     try{
 
   const {email, passw} = req.body;
-  
-   const doesExist = await userModel.findOne({email:email})
+  const resp = [{}]
+  const doesExist = await userModel.findOne({email:email})
   console.log("email is:",email)
   console.log("Doesexist is: ",doesExist.hashpsw);
   if(doesExist)
@@ -126,7 +128,7 @@ exports.login = async (req, res) => {
                 email:email,
                 passw:passw,
 
-            }, "SecretKey", {expiresIn: "16h"});
+            }, "SecretKey", {expiresIn: "4h"});
 
 
             useremail = email
@@ -144,14 +146,18 @@ exports.login = async (req, res) => {
   }
   else{
     console.log(`email ${email} not found`);
-    res.status(401).json(`email ${email} not found`);
+    res.status(401).json({
+        msg: `email ${email} not found`,
+        resp
+    });
 
   }
     } catch(er){
 
         console.error(er);
         res.status(400).json({
-            msg: "ERROR"
+            msg: "ERROR",
+            resp
         })
     }
 };
@@ -162,7 +168,7 @@ exports.dashboard = async (req, res) => {
     console.log('====== Dashboard =======');
     
         const token = req.headers.token;
-        
+        const resp = [{}]
         // const veri = new valid();
         const vemail = valid.verifyToken(token);
         console.log(vemail)
@@ -171,14 +177,15 @@ exports.dashboard = async (req, res) => {
             console.log('Valid token input');
             const AllData = await userModel.find({});
             const displayfeeds = []
-           
+            const userdetails = []
+            
             AllData.forEach((user) => {
                 
                 // ver.email
                 if(vemail == user.email && user.feedback != null && user.feedback.length > 0 && user.userName != "Admin")
                 {
     
-                   var display = {
+                   let display = {
                         id: user._id,
                         name: user.userName,
                         image: user.imgPath,
@@ -188,17 +195,36 @@ exports.dashboard = async (req, res) => {
                     displayfeeds.push(display)
                     console.log(display)
                }
-                
+            
+               //------
+               if (vemail == user.email)
+               {
+                   let details = {
+
+                    id: user._id,
+                    Name: user.userName,
+                    image: user.imgPath,
+                   }
+                   userdetails.push(details);
+                   console.log(details)
+               }
+               //------
+
             })
     
             res.status(201).json({
-                msg: "Valid Token: Success",
+                msg: "Success",
+                userdetails,
                 displayfeeds
+
                 
             })
         //------
         }else{
-            res.status(400).json({ msg: 'Error: Not a Valid Token'});
+            res.status(400).json({
+                 msg: 'Error: Not a Valid Token',
+                resp
+            });
             return
         }
     
@@ -206,7 +232,8 @@ exports.dashboard = async (req, res) => {
 
         console.error(er);
         res.status(400).json({
-            msg: "ERROR"
+            msg: "ERROR",
+            resp
         })
     }
 };
@@ -215,6 +242,7 @@ exports.feedback = async (req, res) => {
    
     try{
         const token = req.headers.token
+        const resp = [{}]
         // const veri = new valid();
         var vemail = valid.verifyToken(token);
         console.log("email is :", vemail)
@@ -239,6 +267,7 @@ exports.feedback = async (req, res) => {
             }
             if(adduser == true){
                 let toFeeds = {
+                    id: user._id,
                     email: user.email,
                     name: user.userName,
                     image: user.imgPath,
@@ -275,7 +304,10 @@ exports.feedback = async (req, res) => {
     }
         //------
         }else{
-            res.status(400).json({ msg: 'Error: Not a Valid Token and Unauthorized user'});
+            res.status(400).json({ 
+                msg: 'Error: Not a Valid Token and Unauthorized user',
+                resp
+            });
             return
         }
         // ----------
@@ -286,7 +318,8 @@ exports.feedback = async (req, res) => {
 
         console.error(er);
         res.status(400).json({
-            msg: "ERROR"
+            msg: "ERROR",
+            resp
         })
     }
 };
@@ -296,42 +329,49 @@ exports.addfeedback = async (req, res) => {
     try
     {
     const token = req.headers.token;
-    
+    const resp = [{}]
     // const veri = new valid();
         let vemail = valid.verifyToken(token);
         console.log(vemail)
         if (vemail != null){
            //--------      
             console.log('Valid token input');
-            
+            console.log( "pass" ,process.env.AUTH_PASS)
             const feedback = req.body.feedback;
-            const email = req.body.email;
-        
-            const currfb = await userModel.findOne({email});
-        
-            // const user = new userModel({userName, email, imgPath, passw,feedback});
-            // const savedUser = await user.save();
-            console.log(feedback);
-            console.log("currfb is: ", currfb);
-            console.log("useremail : ", vemail); //ver.email
-        
-            console.log(currfb);
+            const id = req.body.id;
+            console.log("id is :",id)
+            const currfb = await userModel.findById(id)
+            console.log("Log is :",currfb);
+
+
             if (currfb)
             {
-                for (let obj in currfb.feedback.feedbackGivenBy)
+                const email = currfb.email
+                if(email == "admin@gmail.com")
                 {
-                    // console.log("obj is " , currfb.feedbackGivenBy[obj])
-                    let feedbackGivenById = currfb.feedback.id[obj]
-                    let feedbackGivenByEmail  = await userModel.findOne({feedbackGivenById});
+                    res.status(403).json({
+                        msg:'You Cannot give feeback to Admin',
+                    })
+                    return
+                }
+                for (let obj in currfb.feedback)
+                {
+                    let feedbackGivenById = JSON.stringify(currfb.feedback[obj].id)
+                    feedbackGivenById = feedbackGivenById.replaceAll('"', '')
+                    console.log("email :",currfb.email)
+                    console.log("id :",feedbackGivenById)
+                    let feedbackGivenByEmail  = await userModel.findById(feedbackGivenById);
+                    console.log("vemail :",vemail,"email :",feedbackGivenByEmail.email)
                     if (vemail == feedbackGivenByEmail.email) // ver.email
                     {
                         console.log('feedback already given');
                         res.status(403).json({
                             msg: "feedback is already given...",
-                            
+                            resp,
                             })
                         return 
                     }
+                    
                 }
         
                 
@@ -339,26 +379,33 @@ exports.addfeedback = async (req, res) => {
                 console.log('feedback added')
                 var nowDate = new Date(); 
                 var date = nowDate.getFullYear()+'-'+(nowDate.getMonth()+1)+'-'+nowDate.getDate(); 
-                const data = {feedback:feedback, id:currfb._id, PostedOn: date}
+                const userauth  = await userModel.findOne({email:vemail});
+                const data = {feedback:feedback, id:userauth._id, PostedOn: date}
                 currfb.feedback.push(data)
+                console.log("output data is ", data)
                 const updatefeed = await userModel.updateOne({email:email}, {$set:{feedback:currfb.feedback}});
-                console.log(updatefeed);
-                let store = currfb.feedback;
-                console.log('store: ', store)
+                //console.log(updatefeed);
+                //let store = currfb.feedback;
+                //console.log('store: ', store)
                 res.status(201).json({
                     msg: "feedback added",
-                    store               })
+                    data               })
             }
             else{
                 console.log('user not found')
-                res.json({
+                res.status(404).json({
                     msg:'user not found',
-                status: false
+                    resp
+                
             })
             }
         //------
         }else{
-            res.status(400).json({ msg: 'Error: Not a Valid Token'});
+            res.status(400).json({
+                
+                msg: 'Error: Not a Valid Token',
+                resp
+            });
             return
         }
   
@@ -366,7 +413,8 @@ exports.addfeedback = async (req, res) => {
 
         console.error(er);
         res.status(400).json({
-            msg: "ERROR"
+            msg: "ERROR",
+            resp
         })
     
     }

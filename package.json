@@ -13,10 +13,14 @@
     "cookie-parser": "^1.4.6",
     "cookies-parser": "^1.2.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
     "generate-password": "^1.7.0",
     "njwt": "^0.4.0",
     "node-cron": "^3.0.0",
     "node-datetime": "^2.1.2",
     "nodemailer": "^6.7.2"
+  },
+  "devDependencies": {
+    "node-env-run": "^4.0.2"
   }
 }

@@ -7,7 +7,7 @@ module.exports.verifyToken = function (token) {
     
          let vemail = null // async await 
         jwt.verify(token, "SecretKey", (er, authdata) => {
-            console.log("token is",token);
+            console.log("token is", token);
             if(er)
             {
                 //res.status(400).json({ msg: 'Error: Not a Valid Token'});
