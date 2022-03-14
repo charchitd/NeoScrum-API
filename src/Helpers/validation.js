@@ -1,9 +1,11 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
+
 
 module.exports.verifyToken = function (token) {
   let vemail = null; // async await
-  jwt.verify(token, "SecretKey", (er, authdata) => {
+  jwt.verify(token, process.env.SECRET_KEY, (er, authdata) => {
     console.log("token is", token);
     if (er) {
       //res.status(400).json({ msg: 'Error: Not a Valid Token'});

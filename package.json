@@ -14,6 +14,7 @@
     "cookies-parser": "^1.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
+    "eslint": "^8.11.0",
     "generate-password": "^1.7.0",
     "njwt": "^0.4.0",
     "node-cron": "^3.0.0",
@@ -22,6 +23,7 @@
     "prettier": "^2.5.1"
   },
   "devDependencies": {
+    "eslint-plugin-unused-imports": "^2.0.0",
     "node-env-run": "^4.0.2"
   }
 }

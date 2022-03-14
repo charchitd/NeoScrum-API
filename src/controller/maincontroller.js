@@ -104,7 +104,7 @@ exports.login = async (req, res) => {
             email: email,
             passw: passw,
           },
-          "SecretKey",
+          process.env.SECRET_KEY,
           { expiresIn: "4h" }
         );
 
@@ -182,8 +182,8 @@ exports.dashboard = async (req, res) => {
         //------
       });
 
-      res.status(201).json({
-        msg: "Success",
+      res.status(200).json({
+        msg: "Welcome to the Dashboard",
         userdetails,
         displayfeeds,
       });
@@ -231,7 +231,7 @@ exports.feedback = async (req, res) => {
           if (adduser == true) {
             let toFeeds = {
               id: user._id,
-              email: user.email,
+              // email: user.email,
               name: user.userName,
               image: user.imgPath,
             };
@@ -288,7 +288,7 @@ exports.addfeedback = async (req, res) => {
     if (vemail != null) {
       //--------
       console.log("Valid token input");
-      console.log("pass", process.env.AUTH_PASS);
+      // console.log("pass", process.env.AUTH_PASS);
       const feedback = req.body.feedback;
       const id = req.body.id;
       console.log("id is :", id);
