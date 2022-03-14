@@ -4,13 +4,9 @@ const valid = require("../Helpers/validation.js");
 // const {authSchema} = require('./authSchema')
 const cookiesParser = require("cookie-parser");
 const passcall = require("../Helpers/passfunc.js");
-const multer = require("multer");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const controller = require("../controller/maincontroller");
 const app = express();
-const cors = require("cors");
-const path = require("path");
 const nodemailer = require("../Helpers/mailer");
 const bodyParser = require("body-parser"); //to process data sent through an HTTP request body.
 
@@ -19,6 +15,8 @@ app.use(bodyParser.json());
 
 app.use(cookiesParser());
 app.use(express.static("../data/images/"));
+
+// ---------------- register API controller ----------------------
 
 exports.register = async (req, res, next) => {
   console.log(req.body);
@@ -84,6 +82,8 @@ exports.register = async (req, res, next) => {
   }
 };
 
+// ----------------- Login API controller ----------------------
+
 exports.login = async (req, res) => {
   try {
     const { email, passw } = req.body;
@@ -133,6 +133,9 @@ exports.login = async (req, res) => {
     });
   }
 };
+
+// ---------------- Dashboard API controller ----------------------
+
 
 exports.dashboard = async (req, res) => {
   try {
@@ -203,6 +206,9 @@ exports.dashboard = async (req, res) => {
     });
   }
 };
+
+
+// ---------------- Feedback API controller ----------------------
 
 exports.feedback = async (req, res) => {
   try {
@@ -277,6 +283,8 @@ exports.feedback = async (req, res) => {
     });
   }
 };
+
+// ---------------- Addfeedback API controller ----------------------
 
 exports.addfeedback = async (req, res) => {
   try {
